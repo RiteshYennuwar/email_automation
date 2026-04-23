@@ -11,7 +11,7 @@ from pathlib import Path
 
 from src.database import create_schema, get_connection, get_duplicate_count, get_email_count, insert_email
 from src.dedup import detect_duplicates
-from src.discovery import discover_email_files
+from src.discovery import discover_email_files, safe_open_path
 from src.notifier import generate_notifications
 from src.parser import parse_email
 
@@ -102,17 +102,15 @@ def run_pipeline(
 
     # Step 1: Discovery
     print("=== Step 1: Discovering email files ===", file=sys.stderr)
-    all_files: list[Path] = []
+    # Each entry is (mailbox_name, rel_path_within_mailbox) as strings
+    all_files: list[tuple[str, str]] = []
 
     # Only process selected mailboxes
     for mailbox in SELECTED_MAILBOXES:
         mailbox_path = maildir / mailbox
         if mailbox_path.is_dir():
             files = discover_email_files(mailbox_path)
-            # Prepend mailbox name to relative paths
-            all_files.extend(
-                Path(mailbox) / f for f in files
-            )
+            all_files.extend((mailbox, f) for f in files)
 
     stats["files_discovered"] = len(all_files)
     print(f"  Found {len(all_files)} email files", file=sys.stderr)
@@ -123,12 +121,19 @@ def run_pipeline(
     create_schema(conn)
 
     total = len(all_files)
-    for i, rel_path in enumerate(all_files, 1):
+    for i, (mailbox, rel) in enumerate(all_files, 1):
         if i % 500 == 0:
             print(f"  Parsed {i}/{total} emails...", file=sys.stderr)
 
-        file_path = maildir / rel_path
-        result = parse_email(file_path, maildir)
+        # Construct the source_file for DB storage (forward slashes)
+        import os
+        source_file = mailbox + "/" + rel.replace(os.sep, "/")
+        # Get safe OS path for reading
+        mailbox_path = maildir / mailbox
+        read_path = safe_open_path(mailbox_path, rel)
+        result = parse_email(
+            Path(read_path), open_path=read_path, source_file=source_file
+        )
 
         if result is None:
             stats["parse_failures"] += 1

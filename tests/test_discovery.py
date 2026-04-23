@@ -1,6 +1,7 @@
 """Tests for src/discovery.py — FR-1: Email Discovery."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from src.discovery import discover_email_files
@@ -23,7 +24,7 @@ class TestDiscovery:
 
         files = discover_email_files(maildir)
         assert len(files) == 1
-        assert files[0] == Path("visible")
+        assert files[0].replace(os.sep, "/") == "visible"
 
     def test_skips_directories(self, tmp_path: Path):
         """Directories are not returned as email files."""
@@ -34,7 +35,7 @@ class TestDiscovery:
 
         files = discover_email_files(maildir)
         assert len(files) == 1
-        assert files[0] == Path("email_file")
+        assert files[0].replace(os.sep, "/") == "email_file"
 
     def test_empty_mailbox(self, tmp_path: Path):
         """Empty directory returns empty list, no crash."""
@@ -45,13 +46,13 @@ class TestDiscovery:
         assert files == []
 
     def test_relative_paths(self, tmp_maildir: Path):
-        """All returned paths are relative to maildir root."""
+        """All returned paths are relative (strings, not absolute)."""
         files = discover_email_files(tmp_maildir)
         for f in files:
-            assert not f.is_absolute()
-            # Should start with a mailbox name
-            parts = f.parts
-            assert len(parts) >= 2  # at minimum: mailbox/folder/filename
+            assert not os.path.isabs(f)
+            # Should contain at least a folder separator
+            parts = f.replace(os.sep, "/").split("/")
+            assert len(parts) >= 2  # at minimum: folder/filename
 
     def test_nonexistent_directory(self, tmp_path: Path):
         """Non-existent path returns empty list."""

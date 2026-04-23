@@ -8,6 +8,7 @@ import email
 import email.utils
 import logging
 import re
+import sys
 from datetime import datetime, timezone
 from email.message import Message
 from pathlib import Path
@@ -54,21 +55,33 @@ HEADING_HTML_PATTERN: re.Pattern[str] = re.compile(
 )
 
 
-def parse_email(file_path: Path, maildir: Path | None = None) -> ParsedEmail | None:
+def parse_email(
+    file_path: Path,
+    maildir: Path | None = None,
+    open_path: str | None = None,
+    source_file: str | None = None,
+) -> ParsedEmail | None:
     """Parse a raw RFC 2822 email file and extract structured fields.
 
     Args:
         file_path: Path to the raw email file.
         maildir: Root maildir path for computing relative source_file.
+        open_path: Pre-computed safe path string for opening the file
+            (handles Windows trailing-dot filenames). If None, uses str(file_path).
+        source_file: Override for the source_file field in the result.
 
     Returns:
         ParsedEmail dataclass with all extracted fields, or None if
         mandatory fields could not be extracted (failure logged).
     """
-    source_file = str(file_path.relative_to(maildir)) if maildir else str(file_path)
+    if source_file is None:
+        source_file = str(file_path.relative_to(maildir)) if maildir else str(file_path)
+
+    read_path = open_path or str(file_path)
 
     try:
-        raw_bytes = file_path.read_bytes()
+        with open(read_path, "rb") as f:
+            raw_bytes = f.read()
     except OSError as e:
         logger.error("%s | READ_ERROR | %s", source_file, e)
         return None

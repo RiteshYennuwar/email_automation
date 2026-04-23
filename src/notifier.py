@@ -79,13 +79,20 @@ def generate_notifications(
 
     stats = {"generated": 0, "sent": 0}
 
-    for orig_id, dup_row in groups.items():
+    # Pre-load similarity scores from CSV for performance
+    similarity_map = _load_similarity_scores()
+
+    total_groups = len(groups)
+    for i, (orig_id, dup_row) in enumerate(groups.items(), 1):
+        if i % 1000 == 0:
+            import sys
+            print(f"  Generated {i}/{total_groups} notifications...", file=sys.stderr)
+
         original = get_email_by_id(conn, orig_id)
         if original is None:
             continue
 
-        # Get similarity score from the dedup report if available
-        similarity = _get_similarity_score(dup_row["message_id"])
+        similarity = similarity_map.get(dup_row["message_id"], 0.0)
 
         eml_content = _create_notification_eml(
             dup_message_id=dup_row["message_id"],
@@ -167,29 +174,28 @@ def _create_notification_eml(
     return msg.as_string()
 
 
-def _get_similarity_score(message_id: str) -> float:
-    """Look up similarity score from the duplicates report CSV.
-
-    Args:
-        message_id: Message-ID to look up.
+def _load_similarity_scores() -> dict[str, float]:
+    """Load all similarity scores from the duplicates report CSV.
 
     Returns:
-        Similarity score, or 0.0 if not found.
+        Dictionary mapping duplicate_message_id to similarity_score.
     """
     report_path = Path("duplicates_report.csv")
+    scores: dict[str, float] = {}
     if not report_path.exists():
-        return 0.0
+        return scores
 
     try:
         with report_path.open(encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                if row.get("duplicate_message_id") == message_id:
-                    return float(row.get("similarity_score", 0))
+                mid = row.get("duplicate_message_id", "")
+                score = float(row.get("similarity_score", 0))
+                scores[mid] = score
     except (ValueError, KeyError, OSError):
         pass
 
-    return 0.0
+    return scores
 
 
 def _send_via_mcp(recipient: str, subject: str, content: str) -> bool:
