@@ -1,0 +1,7 @@
+Message-ID: <DUP_BELOW001@example.com>
+Date: Thu, 17 May 2001 09:00:00 -0700 (PDT)
+From: sender@enron.com
+To: recipient@enron.com
+Subject: Re: Test Email
+
+This is a completely rewritten email about a different topic entirely. No similarity to the original.

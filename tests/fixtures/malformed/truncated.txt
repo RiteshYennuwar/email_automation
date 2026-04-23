@@ -1,0 +1,4 @@
+Message-ID: <TRUNC001@example.com>
+Date: Mon, 14 May 2001 09:00:00 -0700
+From: sender@enron.com
+To: recipi

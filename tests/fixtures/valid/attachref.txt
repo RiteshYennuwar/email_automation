@@ -1,0 +1,11 @@
+Message-ID: <ATTACH001@example.com>
+Date: Sun, 24 Jun 2001 09:00:00 -0700
+From: sender@enron.com
+To: recipient@enron.com
+Subject: Report Attached
+
+Please see the attached file.
+
+<<report.xls>>
+
+Let me know if you have questions.

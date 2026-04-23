@@ -1,0 +1,7 @@
+Message-ID: <BADDATE001@example.com>
+Date: not-a-date
+From: sender@enron.com
+To: recipient@enron.com
+Subject: Bad Date
+
+This email has an unparseable date.

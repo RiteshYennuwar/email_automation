@@ -1,0 +1,15 @@
+Message-ID: <FWD001@example.com>
+Date: Fri, 22 Jun 2001 14:00:00 -0700
+From: forwarder@enron.com
+To: recipient@enron.com
+Subject: Fwd: Important Meeting
+
+Here is the forwarded message for your review.
+
+-----Original Message-----
+From: original.sender@enron.com
+Sent: Thursday, June 21, 2001 2:00 PM
+To: forwarder@enron.com
+Subject: Important Meeting
+
+Please attend the meeting tomorrow at 3pm.

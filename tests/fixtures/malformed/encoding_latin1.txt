@@ -1,0 +1,7 @@
+Message-ID: <LATIN001@example.com>
+Date: Mon, 14 May 2001 09:00:00 -0700
+From: sender@enron.com
+To: recipient@enron.com
+Subject: Latin-1 Encoding Test
+
+This email has special chars: caf, rsum, navet.

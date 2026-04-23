@@ -1,0 +1,9 @@
+Message-ID: <MULTI001@example.com>
+Date: Thu, 21 Jun 2001 08:00:00 -0500
+From: sender@enron.com
+To: first@enron.com,
+	second@enron.com,
+	third@enron.com
+Subject: Multiline Recipients
+
+Body with multiline to addresses.

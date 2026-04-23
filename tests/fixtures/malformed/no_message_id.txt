@@ -1,0 +1,6 @@
+Date: Mon, 14 May 2001 09:00:00 -0700
+From: sender@enron.com
+To: recipient@enron.com
+Subject: No Message ID
+
+This email has no Message-ID header.

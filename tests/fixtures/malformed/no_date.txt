@@ -1,0 +1,6 @@
+Message-ID: <NODATE001@example.com>
+From: sender@enron.com
+To: recipient@enron.com
+Subject: No Date Header
+
+This email has no Date header.

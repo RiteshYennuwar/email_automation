@@ -1,0 +1,22 @@
+Message-ID: <FULL001@example.com>
+Date: Wed, 20 Jun 2001 10:30:00 -0000
+From: "Lay, Kenneth" <klay@enron.com>
+To: jskilling@enron.com, vkaminski@enron.com
+Cc: jdasovich@enron.com
+Bcc: skean@enron.com
+Subject: Re: Quarterly Report
+X-From: Lay, Kenneth
+X-To: Skilling, Jeff
+X-cc: Dasovich, Jeff
+X-bcc: Kean, Steven
+X-Folder: \Lay, Kenneth\Sent
+X-Origin: Lay-K
+Content-Type: text/plain; charset=us-ascii
+
+Please review the attached report.
+
+QUARTERLY REPORT
+
+Action Items:
+1. Review numbers
+2. Approve budget

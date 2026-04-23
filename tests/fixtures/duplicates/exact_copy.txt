@@ -1,0 +1,7 @@
+Message-ID: <DUP_EXACT001@example.com>
+Date: Tue, 15 May 2001 09:00:00 -0700 (PDT)
+From: sender@enron.com
+To: recipient@enron.com
+Subject: Re: Test Email
+
+This is the body of a test email.

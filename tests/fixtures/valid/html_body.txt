@@ -1,0 +1,11 @@
+Message-ID: <HTML001@example.com>
+Date: Mon, 25 Jun 2001 11:00:00 -0700
+From: sender@enron.com
+To: recipient@enron.com
+Subject: HTML Email
+Content-Type: multipart/mixed; boundary="boundary123"
+
+This email has an HTML body and attachment reference.
+
+<h1>Meeting Notes</h1>
+<p>Discussion points below.</p>

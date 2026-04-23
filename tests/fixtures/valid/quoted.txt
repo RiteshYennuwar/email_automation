@@ -1,0 +1,11 @@
+Message-ID: <QUOTE001@example.com>
+Date: Sat, 23 Jun 2001 10:00:00 -0700
+From: replier@enron.com
+To: original@enron.com
+Subject: Re: Project Update
+
+I agree with your assessment.
+
+> This is the original message.
+> It spans multiple lines.
+> Please review and respond.
