@@ -501,6 +501,67 @@ def create_app(db_path: str = "enron.db") -> Flask:
             return jsonify({"error": "Not found"}), 404
         return jsonify({"content": filepath.read_text(encoding="utf-8")})
 
+    @app.route("/api/notifications/send", methods=["POST"])
+    def api_notification_send():
+        """Send a single draft notification via Gmail MCP.
+
+        Reads the named .eml file, extracts subject/body/references,
+        calls _send_via_mcp, and appends the result to send_log.csv.
+
+        Request body JSON:
+            filename: Name of the .eml file in output/replies/
+            notify_address: Recipient email address override
+        """
+        import email as _email
+
+        from src.notifier import _log_send, _send_via_mcp
+
+        data = request.get_json(silent=True) or {}
+        filename = data.get("filename", "")
+        notify_address = data.get("notify_address", "").strip()
+
+        if not filename or not notify_address:
+            return jsonify({"error": "filename and notify_address are required"}), 400
+
+        filepath = REPLIES_DIR / filename
+        if not filepath.exists() or not str(filepath.resolve()).startswith(
+            str(REPLIES_DIR.resolve())
+        ):
+            return jsonify({"error": "Draft not found"}), 404
+
+        content = filepath.read_text(encoding="utf-8")
+        msg = _email.message_from_string(content)
+        full_subject = msg.get("Subject", "(no subject)")
+
+        # _send_via_mcp prepends "[Duplicate Notice] Re: " itself, so pass the
+        # original subject without the prefix to avoid doubling it up.
+        _prefix = "[Duplicate Notice] Re: "
+        bare_subject = (
+            full_subject[len(_prefix):] if full_subject.startswith(_prefix) else full_subject
+        )
+
+        success = _send_via_mcp(notify_address, bare_subject, content)
+        status = "sent" if success else "failed"
+        error_msg = "" if success else "MCP send error"
+        _log_send(notify_address, full_subject, status, error_msg)
+
+        if success:
+            # Mark notification_sent in DB if we can match the References header
+            references = msg.get("References", "")
+            if references:
+                conn = get_db()
+                try:
+                    now_utc = datetime.now(timezone.utc).isoformat()
+                    conn.execute(
+                        "UPDATE emails SET notification_sent = 1, notification_date = ? WHERE message_id = ?",
+                        (now_utc, references),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+        return jsonify({"status": status, "subject": full_subject, "recipient": notify_address})
+
     # ===== PIPELINE OPERATIONS API =====
 
     @app.route("/api/pipeline/run", methods=["POST"])
@@ -881,14 +942,28 @@ tr:hover { background: rgba(34,139,230,0.05); }
 
         <!-- NOTIFICATIONS -->
         <div id="notifications" class="section">
-            <h3 style="margin-bottom:16px">Draft Notifications</h3>
+            <div class="filters" style="margin-bottom:16px">
+                <input type="email" id="notify-address" placeholder="Recipient email for live send..." style="min-width:280px">
+                <span style="font-size:12px;color:var(--text-secondary)">Enter your email to send a draft live via Gmail MCP</span>
+            </div>
+            <h3 style="margin-bottom:12px">Draft Notifications</h3>
             <div class="table-container" style="max-height:400px">
                 <table>
-                    <thead><tr><th>Filename</th><th>Size</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Filename</th><th>Size</th><th>Preview</th><th>Send Live</th></tr></thead>
                     <tbody id="draft-table"></tbody>
                 </table>
             </div>
             <div id="draft-preview" style="margin-top:16px"></div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:24px;margin-bottom:12px">
+                <h3>Send Log</h3>
+                <button class="btn" onclick="loadSendLog()">Refresh</button>
+            </div>
+            <div class="table-container" style="max-height:300px">
+                <table>
+                    <thead><tr><th>Timestamp</th><th>Recipient</th><th>Subject</th><th>Status</th><th>Error</th></tr></thead>
+                    <tbody id="send-log-table"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- OPERATIONS -->
@@ -1201,22 +1276,88 @@ async function loadErrors() {
 
 // === NOTIFICATIONS ===
 async function loadDrafts() {
-    const res = await fetch('/api/notifications/drafts');
-    const drafts = await res.json();
-    document.getElementById('draft-table').innerHTML = drafts.map(d => `
-        <tr>
-            <td style="font-family:var(--mono);font-size:11px">${esc(d.filename)}</td>
+    const [draftsRes, logRes] = await Promise.all([
+        fetch('/api/notifications/drafts'),
+        fetch('/api/notifications/log'),
+    ]);
+    const drafts = await draftsRes.json();
+    const log = await logRes.json();
+    const sentFiles = new Set(log.filter(e => e.status === 'sent').map(e => e.subject));
+
+    document.getElementById('draft-table').innerHTML = drafts.map(d => {
+        const fname = esc(d.filename);
+        const alreadySent = sentFiles.has(d.filename.replace('.eml','').replace(/_at_/g,'@'));
+        return `<tr>
+            <td style="font-family:var(--mono);font-size:11px">${fname}</td>
             <td>${(d.size/1024).toFixed(1)} KB</td>
-            <td><button class="btn" onclick="previewDraft('${esc(d.filename)}')">Preview</button></td>
-        </tr>
-    `).join('');
+            <td><button class="btn" onclick="previewDraft('${fname}')">Preview</button></td>
+            <td>
+                <button class="btn btn-primary" onclick="sendDraft('${fname}')" id="send-btn-${fname}">
+                    Send
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    renderSendLog(log);
+}
+
+async function loadSendLog() {
+    const res = await fetch('/api/notifications/log');
+    const log = await res.json();
+    renderSendLog(log);
+}
+
+function renderSendLog(entries) {
+    document.getElementById('send-log-table').innerHTML = entries.length === 0
+        ? '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary)">No sends yet</td></tr>'
+        : [...entries].reverse().map(e => `
+            <tr>
+                <td style="font-size:11px">${esc(e.timestamp || '')}</td>
+                <td>${esc(e.recipient || '')}</td>
+                <td>${esc((e.subject || '').substring(0, 60))}</td>
+                <td><span class="badge ${e.status === 'sent' ? 'badge-ok' : 'badge-err'}">${esc(e.status || '')}</span></td>
+                <td style="font-size:11px;color:var(--error)">${esc(e.error || '')}</td>
+            </tr>
+        `).join('');
+}
+
+async function sendDraft(filename) {
+    const notifyAddress = document.getElementById('notify-address').value.trim();
+    if (!notifyAddress) {
+        showToast('Enter a recipient email address first', true);
+        document.getElementById('notify-address').focus();
+        return;
+    }
+    const btn = document.getElementById('send-btn-' + filename);
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    try {
+        const res = await fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({filename, notify_address: notifyAddress}),
+        });
+        const data = await res.json();
+        if (data.status === 'sent') {
+            showToast('Sent to ' + notifyAddress);
+            if (btn) { btn.textContent = 'Sent'; btn.classList.remove('btn-primary'); btn.classList.add('btn-success'); }
+        } else {
+            showToast('Send failed: ' + (data.error || 'MCP error'), true);
+            if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
+        }
+        loadSendLog();
+    } catch (err) {
+        showToast('Request failed: ' + err.message, true);
+        if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
+    }
 }
 
 async function previewDraft(filename) {
     const res = await fetch('/api/notifications/drafts/' + encodeURIComponent(filename));
     const data = await res.json();
     document.getElementById('draft-preview').innerHTML = `
-        <div class="card"><h3>Draft Preview: ${esc(filename)}</h3><pre style="margin-top:12px;font-size:12px">${esc(data.content)}</pre></div>
+        <div class="card"><h3>Draft Preview: ${esc(filename)}</h3><pre style="margin-top:12px;font-size:12px;max-height:400px;overflow:auto">${esc(data.content)}</pre></div>
     `;
 }
 
@@ -1255,11 +1396,12 @@ function field(label, value) {
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-function showToast(msg) {
+function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    t.style.background = isError ? 'var(--error)' : 'var(--success)';
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
+    setTimeout(() => t.classList.remove('show'), 4000);
 }
 
 // === INIT ===
