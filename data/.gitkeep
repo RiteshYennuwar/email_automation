@@ -1,0 +1,3 @@
+# Download Enron dataset here:
+# https://www.cs.cmu.edu/~enron/enron_mail_20150507.tar.gz
+# Extract so that maildir/ is directly inside this data/ folder.

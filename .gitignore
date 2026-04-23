@@ -1,0 +1,40 @@
+# Dataset (too large to commit)
+data/maildir/
+
+# Database
+*.db
+*.sqlite
+
+# Real MCP credentials (never commit)
+mcp_config.json
+.env
+gmail-token.json
+gcp-oauth.keys.json
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.mcp.json

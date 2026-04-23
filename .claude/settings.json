@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(pytest:*)",
+      "Bash(sqlite3:*)",
+      "Bash(ruff:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(tar:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(git:*)",
+      "Read(./**)",
+      "Write(./src/**)",
+      "Write(./tests/**)",
+      "Write(./output/**)",
+      "Write(./docs/**)",
+      "Write(./*.md)",
+      "Write(./*.sql)",
+      "Write(./*.txt)",
+      "Write(./*.csv)",
+      "Write(./*.py)",
+      "Write(./.gitignore)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Read(./.env)",
+      "Read(./mcp_config.json)",
+      "Write(./mcp_config.json)"
+    ]
+  },
+  "enableAllProjectMcpServers": true
+}
