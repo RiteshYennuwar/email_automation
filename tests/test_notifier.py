@@ -55,6 +55,10 @@ class TestNotifier:
         """eml file created with correct template fields."""
         self._setup_duplicate_pair(tmp_db)
 
+        # Clean output dir first
+        for f in OUTPUT_DIR.glob("*.eml"):
+            f.unlink()
+
         stats = generate_notifications(tmp_db)
         assert stats["generated"] >= 1
 
@@ -65,6 +69,10 @@ class TestNotifier:
     def test_eml_template_fields(self, tmp_db):
         """Subject, References, message IDs, dates, similarity score all present."""
         self._setup_duplicate_pair(tmp_db)
+
+        # Clean output dir first
+        for f in OUTPUT_DIR.glob("*.eml"):
+            f.unlink()
 
         generate_notifications(tmp_db)
 
