@@ -32,6 +32,8 @@ dist/
 build/
 htmlcov/
 .coverage
+.coveragerc
+output/replies/
 
 # IDE
 .vscode/

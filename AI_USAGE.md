@@ -367,7 +367,11 @@ timestamp,recipient,subject,status,error
 
 Multiple emails confirmed delivered to both `yennuwar.ritesh@gmail.com` and `yennuwar.r@northeastern.edu`.
 
-> **Screenshot:** See Gmail inbox for received "[Duplicate Notice]" emails as visual confirmation of successful delivery. Also see the dashboard Notifications tab send log showing "sent" status badges.
+**Screenshot — Gmail inbox confirmation:**
+
+![Duplicate Notice email received in Gmail inbox](image.png)
+
+The screenshot shows a `[Duplicate Notice] Re: EGM All Employee Meeting` notification email received at `yennuwar.ritesh@gmail.com`, sent from the pipeline's Email Deduplication System. The email body matches the required template exactly — flagged message ID, original message ID, date fields, and 100.0% similarity score are all present.
 
 ---
 
